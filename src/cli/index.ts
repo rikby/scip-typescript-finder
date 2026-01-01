@@ -18,6 +18,14 @@ interface CliOptions {
 }
 
 function handleCommand(symbolName: string, options: CliOptions): void {
+  const format = options.format || 'text';
+
+  // Validate format before loading SCIP file
+  if (format !== 'text' && format !== 'json') {
+    console.error(`Invalid format: ${format}. Valid options are: text, json`);
+    process.exit(1);
+  }
+
   const scipPath = findScipFile(options.scip);
   if (!scipPath) {
     console.error(
@@ -31,15 +39,9 @@ function handleCommand(symbolName: string, options: CliOptions): void {
   const scipIndex = loadScipIndex(scipPath);
   const symbolIndex = buildSymbolIndex(scipIndex);
   const queryEngine = new QueryEngine(symbolIndex);
-  const format = options.format || 'text';
 
   let results = queryEngine.find(symbolName, { from: options.from, folder: options.folder });
   results = handleFromFilter(queryEngine, symbolName, options.from, options.folder, format, results);
-
-  if (format !== 'text' && format !== 'json') {
-    console.error(`Invalid format: ${format}. Valid options are: text, json`);
-    process.exit(1);
-  }
 
   console.log(format === 'json' ? formatAsJson(symbolName, results) : formatAsText(symbolName, results));
 }

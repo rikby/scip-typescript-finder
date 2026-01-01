@@ -8,6 +8,10 @@
 
 Type-aware code search tool for TypeScript codebases using SCIP (Sourcegraph Code Intelligence Protocol) index files. The system enables developers to find precise symbol references without false positives from same-named symbols in different files or packages.
 
+**Single SCIP File Support**: Search within a single package's SCIP index to find symbol usages, definitions, and references with package-aware distinction.
+
+**Multi-SCIP File Support**: Load and merge multiple SCIP files from different packages in a monorepo to enable cross-package symbol dependency analysis and comprehensive symbol search across package boundaries.
+
 ## Behavioral Requirements (EARS)
 
 ### Requirement 1: Symbol Search by Name
@@ -117,8 +121,37 @@ Type-aware code search tool for TypeScript codebases using SCIP (Sourcegraph Cod
 #### Acceptance Criteria
 
 1. WHEN user runs `scip-find --help` or `scip-find -h`, the system shall display usage information including: command syntax, arguments, options, and examples.
-2. WHEN displaying help, the system shall show all available options: `--from`, `--folder`, `--format`, `--scip`, `--help`.
-3. WHEN user provides invalid arguments, the system shall display an error message with the invalid argument and suggest using `--help`.
+2. WHEN displaying help, the system shall show all available options: `--from`, `--folder`, `--format`, `--scip` (repeatable), `--help`.
+3. WHEN displaying help for `--scip`, the system shall indicate that multiple SCIP files can be specified via repeated flags (e.g., `--scip file1.scip --scip file2.scip`).
+4. WHEN user provides invalid arguments, the system shall display an error message with the invalid argument and suggest using `--help`.
+
+### Requirement 12: Multi-SCIP File Support
+
+**Objective**: As a developer working in a monorepo, I want to search for symbols across multiple SCIP files from different packages, so that I can find symbol usages across package boundaries (e.g., `markdown-ticket` using types from `@mdt/shared`).
+
+#### Acceptance Criteria
+
+1. WHEN user provides multiple `--scip <path>` arguments, the system shall load and merge all specified SCIP files into a unified symbol index.
+2. WHEN loading multiple SCIP files, the system shall accept repeated `--scip` flags (e.g., `--scip index1.scip --scip index2.scip`).
+3. WHEN merging symbol indexes from multiple SCIP files, the system shall preserve SCIP's natural package segregation via symbol encoding (package:file:name format).
+4. IF any specified SCIP file does not exist, THEN the system shall display an error message listing all missing files and exit with code 1.
+5. IF any SCIP file cannot be parsed, THEN the system shall display "Failed to parse SCIP file: <path>: <reason>" and exit with code 1.
+6. WHEN symbol occurrences span multiple packages, the system shall return all occurrences across all loaded SCIP files.
+7. WHEN standard library symbols (e.g., TypeScript, @types/node) appear in multiple SCIP files, the system shall treat these duplicates as expected and merge them without warnings.
+8. WHEN loading multiple SCIP files, the system shall complete loading within 100ms per file (validated by PoC: 55ms average per file).
+9. IF no SCIP files are specified and none are found automatically, THEN the system shall display an error message indicating how to specify SCIP file paths.
+
+### Requirement 13: Cross-Package Symbol Query
+
+**Objective**: As a developer analyzing dependencies in a monorepo, I want to query symbols across package boundaries, so that I can understand how packages depend on each other.
+
+#### Acceptance Criteria
+
+1. WHEN querying a symbol that exists in multiple packages, the system shall return occurrences grouped by package name.
+2. WHEN user specifies `--from` for a symbol from one package, the system shall find usages of that symbol across all loaded packages (not just the defining package).
+3. WHEN cross-package symbol references exist (e.g., `markdown-ticket` imports from `@mdt/shared`), the system shall include these cross-package occurrences in search results.
+4. WHEN displaying cross-package results, the system shall clearly indicate which package each occurrence belongs to.
+5. IF a symbol name exists in multiple packages but user does not specify `--from`, THEN the system shall return results for all symbols with that name across all packages.
 
 ---
 
@@ -136,6 +169,12 @@ Type-aware code search tool for TypeScript codebases using SCIP (Sourcegraph Cod
 | FR-8 | Output grep-compatible text format | Familiar to developers, works with Unix tooling |
 | FR-9 | Output structured JSON format | Enables programmatic consumption by other tools |
 | FR-10 | Decode SCIP symbol role bitmask to readable names | Makes symbol usage context clear to users |
+| FR-11 | Accept multiple `--scip` path arguments via repeated flags | Enables monorepo cross-package symbol search |
+| FR-12 | Load and merge multiple SCIP files into unified index | Supports querying across package boundaries |
+| FR-13 | Track symbol collisions during SCIP merge | Identifies duplicate symbols across packages (expected for stdlib) |
+| FR-14 | Group query results by package name | Makes cross-package dependencies clear |
+| FR-15 | Validate all SCIP files exist before loading | Provides clear error messages for missing files |
+| FR-16 | Parse multiple SCIP files in < 100ms per file | Validated by PoC: 55ms average per file |
 
 ## Non-Functional Requirements
 
@@ -143,9 +182,12 @@ Type-aware code search tool for TypeScript codebases using SCIP (Sourcegraph Cod
 
 | ID | Requirement | Target | Rationale |
 |----|-------------|--------|-----------|
-| NFR-P1 | SCIP file parsing | < 1 second for 12MB SCIP file (~437 documents) | Fast startup for CLI usage |
+| NFR-P1 | SCIP file parsing (single file) | < 1 second for 12MB SCIP file (~437 documents) | Fast startup for CLI usage |
 | NFR-P2 | Symbol lookup query | < 1 second for 100k LOC codebase | Interactive responsiveness |
 | NFR-P3 | Memory usage | Full index in memory (suitable for CLI) | Trade memory for query speed, acceptable for CLI tools |
+| NFR-P4 | Multi-SCIP file loading | < 100ms per SCIP file (validated: 55ms average) | Supports monorepo workflows with multiple packages |
+| NFR-P5 | Cross-package query performance | < 1ms per query (validated by PoC) | Query time independent of number of loaded SCIP files |
+| NFR-P6 | Symbol index merge time | < 10ms for merging 2-5 SCIP files | Merge operation is simple Map concatenation |
 
 ### Reliability
 
@@ -180,6 +222,8 @@ Type-aware code search tool for TypeScript codebases using SCIP (Sourcegraph Cod
 | R9 | Error handling | `cli/index.ts` | All components |
 | R10 | Symbol role identification | `utils/symbol-roles.ts` | SCIP data structures |
 | R11 | CLI help and usage | `cli/index.ts` | `commander` library |
+| R12 | Multi-SCIP file support | `core/scip-loader.ts` | `cli/index.ts`, `core/symbol-indexer.ts` |
+| R13 | Cross-package symbol query | `core/query-engine.ts` | `core/symbol-indexer.ts`, `output/formatters` |
 
 ---
 
@@ -198,6 +242,44 @@ Type-aware code search tool for TypeScript codebases using SCIP (Sourcegraph Cod
 | R9 | Edge Cases | Edge cases section |
 | R10 | Success Conditions | AC-3 |
 | R11 | Open Questions | N/A |
+| R12 | Multi-SCIP Support (PoC) | PoC validation: 55ms load time, <1ms query |
+| R13 | Cross-Package Query (PoC) | PoC validation: 124 occurrences across packages |
+
+---
+
+## Verification Criteria
+
+### Single SCIP File Scenarios (Requirements 1-11)
+
+| Scenario | Command | Expected Result |
+|----------|---------|-----------------|
+| Basic symbol search | `scip-find Ticket` | All occurrences of `Ticket` symbol |
+| Filter by defining file | `scip-find Ticket --from shared/models/Ticket.ts` | Only `Ticket` from `shared/models/Ticket.ts` |
+| Filter by folder | `scip-find Ticket --folder src/` | Only occurrences in `src/` directory |
+| JSON output | `scip-find Ticket --format json` | Valid JSON with symbol data |
+| Missing SCIP file | `scip-find Ticket --scip missing.scip` | Error: "SCIP file not found: missing.scip" |
+| Symbol not found | `scip-find NonExistentSymbol` | Message: "symbol not found", exit code 0 |
+
+### Multi-SCIP File Scenarios (Requirements 12-13)
+
+| Scenario | Command | Expected Result |
+|----------|---------|-----------------|
+| Load multiple SCIP files | `scip-find --scip pkg1/index.scip --scip pkg2/index.scip Ticket` | Merged index with occurrences from both packages |
+| Cross-package query | `scip-find --scip markdown-ticket/index.scip --scip shared/index.scip StatusConfig` | Finds `StatusConfig` across both packages |
+| Missing SCIP in multi-file list | `scip-find --scip pkg1/index.scip --scip missing.scip Ticket` | Error: "SCIP file not found: missing.scip" |
+| Standard library collision handling | `scip-find --scip pkg1/index.scip --scip pkg2/index.scip Array` | Returns merged results without collision warnings |
+| Package-grouped results | `scip-find --scip pkg1/index.scip --scip pkg2/index.scip Ticket --format json` | Results grouped by package name |
+| Performance validation | `time scip-find --scip *.scip Ticket` | Load time: <100ms per SCIP file, query: <1ms |
+
+### Performance Validation
+
+| Metric | Target | Validation Method |
+|--------|--------|-------------------|
+| Single SCIP load | < 1 second for 12MB file | Time `scip-find` startup |
+| Multi-SCIP load | < 100ms per file | Time load of 2+ SCIP files |
+| Query performance | < 1ms per query | Benchmark symbol lookups |
+| Memory usage | Suitable for CLI | Monitor memory during multi-SCIP load |
 
 ---
 *Generated from SCF-001 by /mdt:requirements (v3)*
+*Updated: 2026-01-01 - Added multi-SCIP file support requirements (R12, R13)*

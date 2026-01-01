@@ -19,7 +19,7 @@ export function handleFromFilter(
   if (from && initialResults.length === 0 && format === 'text') {
     const allResults = queryEngine.find(symbolName, { folder });
     if (allResults.length > 0) {
-      console.error(`Warning: Symbol '${symbolName}' is not defined in '${from}'. Showing all occurrences.\n`);
+      console.log(`Warning: Symbol '${symbolName}' is not defined in '${from}'. Showing all occurrences.\n`);
       return allResults;
     }
   }

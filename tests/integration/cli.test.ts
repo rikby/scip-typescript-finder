@@ -183,7 +183,7 @@ describe('CLI Integration Tests', () => {
         const result = runCli(`--scip ${testScipPath} Ticket --format text`);
         expect(result.exitCode).toBe(0);
         // Check for grep-like format: file:line:column:
-        expect(result.stdout).toMatch(/:.+:\d+:\d+:/);
+        expect(result.stdout).toMatch(/^.+:\d+:\d+:/);
       });
 
       it('should include file path, line number, and column', () => {

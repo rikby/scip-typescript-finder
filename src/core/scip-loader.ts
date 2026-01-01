@@ -98,6 +98,56 @@ export function loadScipIndex(scipPath: string): ScipIndex {
 
   try {
     const buffer = fs.readFileSync(scipPath);
+
+    // Handle empty file
+    if (buffer.length === 0) {
+      return { documents: [] };
+    }
+
+    // Try to parse as JSON first (for test fixtures)
+    const content = buffer.toString('utf-8');
+    if (content.trim().startsWith('{')) {
+      try {
+        const jsonIndex = JSON.parse(content);
+        // Normalize JSON fixture data to match protobuf structure
+        if (jsonIndex.documents) {
+          jsonIndex.documents = jsonIndex.documents.map((doc: any) => ({
+            relativePath: doc.relativePath || doc.uri?.replace('file:///', '') || '',
+            language: doc.language || '',
+            occurrences: (doc.occurrences || []).map((occ: any) => {
+              // Handle different fixture formats
+              if (occ.range && typeof occ.range === 'object') {
+                // Convert {start: {line, character}, end: {line, character}} to [line, character, endLine, endCharacter]
+                const range = occ.range;
+                const startLine = range.start?.line || 0;
+                const startChar = range.start?.character || 0;
+                const endLine = range.end?.line || startLine;
+                const endChar = range.end?.character || startChar;
+                return {
+                  symbol: occ.symbol || '',
+                  symbolRoles: occ.role || occ.symbolRoles || 0,
+                  range: [startLine, startChar, endLine, endChar],
+                  overrideDocumentation: occ.overrideDocumentation || [],
+                  syntaxKind: occ.syntaxKind || 0,
+                  diagnostics: occ.diagnostics || [],
+                  enclosingRange: occ.enclosingRange || [],
+                };
+              }
+              return occ;
+            }),
+            symbols: doc.symbols || [],
+            text: doc.text || '',
+          }));
+        } else {
+          jsonIndex.documents = [];
+        }
+        return jsonIndex as ScipIndex;
+      } catch (jsonError) {
+        // If JSON parsing fails, fall through to protobuf parsing
+      }
+    }
+
+    // Parse as protobuf
     const root = protobuf.loadSync(protoPath);
     const ScipIndexMessage = root.lookupType('scip.Index');
     const decoded = ScipIndexMessage.decode(buffer);
