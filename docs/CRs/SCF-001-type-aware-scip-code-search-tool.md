@@ -1,9 +1,11 @@
 ---
 code: SCF-001
-status: Proposed
+status: Implemented
 dateCreated: 2025-12-30T14:26:42.205Z
 type: Feature Enhancement
 priority: Medium
+implementationDate: 2026-01-01
+implementationNotes: Completed Phase 1-5: SCIP parsing, symbol indexing, query engine with filtering (from/folder), CLI with text/JSON formatters, multi-SCIP support for cross-package queries. Fixed line/column number conversion from 0-based (SCIP) to 1-based (display). All phases implemented and tested.
 ---
 
 # Type-Aware SCIP Code Search Tool
@@ -101,6 +103,50 @@ priority: Medium
 - What happens when multiple symbols have same name in same file (overloads)
 
 > Full EARS requirements: [requirements.md](./SCF-001/requirements.md)
+
+> **Extracted**: Complex architecture — see [architecture-phase6.md](./SCF-001/architecture-phase6.md)
+
+**Summary**:
+- **Pattern**: Resolver Pattern — decouples symbol resolution from storage/query layers
+- **Components**: 7 (5 new files, 2 modified files)
+- **Key constraint**: Pre-resolution at index build time (10-15ms overhead, zero query overhead)
+- **Total new code**: ~355 lines (limit), ~535 lines (hard max)
+
+**Core Achievement**: Enables cross-package `--from` queries
+```bash
+scip-find Ticket --from models/Ticket.ts \
+  --scip shared/index.scip \
+  --scip markdown-ticket/index.scip
+# Now finds usages in markdown-ticket that import from @mdt/shared ✅
+```
+
+**Validated Decisions** (from PoC):
+- Export registry: `Map<string, SymbolExport[]>` keyed by display name
+- Import parsing: Regex patterns (95%+ coverage, no AST needed)
+- Resolution timing: Build-time (not query-time) for zero query overhead
+- Performance: 10-15ms build overhead, <500KB memory, <1ms query time
+
+**Extension Rule**: To add new import syntax, add regex pattern to `import-parser.ts` (limit 75 lines). Resolver automatically handles new types.
+
+**Implementation Tasks**:
+1. `import-parser.ts` (75 lines) - Import statement extraction
+2. `symbol-resolver.ts` (200 lines) - Resolution orchestration
+3. Modify `symbol-indexer.ts` (+50 lines) - Integrate resolver
+4. Modify `cli.ts` (+30 lines) - Construct and pass resolver
+5. Test suite - Unit + integration tests
+
+**Integration Points**:
+- `scip-loader.ts`: No changes (existing `loadMultipleScipFiles()` used)
+- `symbol-indexer.ts`: Accept optional resolver, resolve "local N" at index time
+- `query-engine.ts`: No changes (works with resolved symbols)
+- `cli.ts`: Construct resolver, pass to `buildMergedIndex()`
+
+**Success Criteria**:
+- [ ] Cross-package `--from` queries work correctly
+- [ ] Both package and relative imports supported
+- [ ] Resolution build time <50ms for 3 SCIP files
+- [ ] All existing tests pass (no regression)
+- [ ] New test coverage for resolver and import parser
 ## 5. Verification
 ### How to Verify Success
 - **Real-world validation**: Test on `markdown-ticket/` project with known `Ticket` interface usages

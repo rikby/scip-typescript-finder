@@ -26,7 +26,7 @@ export function formatAsText(symbolName: string, results: QueryResult[]): string
   }
 
   return results
-    .map((r) => `${r.filePath}:${r.line}:${r.column}: ${getRoleNames(r.roles).join(', ')}`)
+    .map((r) => `${r.filePath}:${r.line + 1}:${r.column + 1}: ${getRoleNames(r.roles).join(', ')}`)
     .join('\n');
 }
 
@@ -37,10 +37,10 @@ export function formatAsText(symbolName: string, results: QueryResult[]): string
 export function formatAsJson(symbolName: string, results: QueryResult[]): string {
   const occurrences = results.map((r) => ({
     file: r.filePath,
-    line: r.line,
-    column: r.column,
-    endLine: r.endLine,
-    endColumn: r.endColumn,
+    line: r.line + 1,
+    column: r.column + 1,
+    endLine: r.endLine ? r.endLine + 1 : undefined,
+    endColumn: r.endColumn ? r.endColumn + 1 : undefined,
     role: getRoleNames(r.roles).join(', '),
     isDefinition: isDefinition(r.roles),
     isReference: isReference(r.roles),
