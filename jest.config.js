@@ -9,6 +9,10 @@ export default {
   transformIgnorePatterns: [
     'node_modules',
   ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/markdown-ticket/'
+  ],
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',

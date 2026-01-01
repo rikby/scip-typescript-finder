@@ -6,7 +6,7 @@
  * Status: RED (implementation pending)
  */
 
-import { buildSymbolIndex, mergeSymbolVariants } from '../../../src/core/symbol-indexer';
+import { buildSymbolIndex, mergeSymbolVariants } from '../../../src/core';
 
 // Mock SCIP data structures
 const mockScipIndex = {
@@ -183,6 +183,7 @@ describe('Symbol Indexer', () => {
         const tsOccurrences = [
           {
             symbol: 'scip-typescript npm @mdt/shared 1.0.0 models/\\`Ticket.ts\\`/Ticket#',
+            package: '@mdt/shared',
             filePath: 'src/models/Ticket.ts',
             line: 5,
             column: 0,
@@ -192,6 +193,7 @@ describe('Symbol Indexer', () => {
           },
           {
             symbol: 'scip-typescript npm @mdt/shared 1.0.0 models/\\`Ticket.ts\\`/Ticket#',
+            package: '@mdt/shared',
             filePath: 'src/models/Ticket.ts',
             line: 10,
             column: 10,
@@ -204,6 +206,7 @@ describe('Symbol Indexer', () => {
         const dtsOccurrences = [
           {
             symbol: 'scip-typescript npm @mdt/shared 1.0.0 models/\\`Ticket.d.ts\\`/Ticket#',
+            package: '@mdt/shared',
             filePath: 'models/Ticket.d.ts',
             line: 1,
             column: 0,
@@ -222,6 +225,7 @@ describe('Symbol Indexer', () => {
         const tsOccurrences = [
           {
             symbol: 'scip-typescript npm @mdt/shared 1.0.0 models/\\`Ticket.ts\\`/Ticket#',
+            package: '@mdt/shared',
             filePath: 'src/models/Ticket.ts',
             line: 5,
             column: 0,
@@ -234,6 +238,7 @@ describe('Symbol Indexer', () => {
         const dtsOccurrences = [
           {
             symbol: 'scip-typescript npm @mdt/shared 1.0.0 models/\\`Ticket.ts\\`/Ticket#',
+            package: '@mdt/shared',
             filePath: 'src/models/Ticket.ts',
             line: 5,
             column: 0,
@@ -255,6 +260,7 @@ describe('Symbol Indexer', () => {
         const dtsOccurrences = [
           {
             symbol: 'scip-typescript npm @mdt/shared 1.0.0 models/\\`Ticket.d.ts\\`/Ticket#',
+            package: '@mdt/shared',
             filePath: 'models/Ticket.d.ts',
             line: 1,
             column: 0,

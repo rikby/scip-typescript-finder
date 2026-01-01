@@ -5,7 +5,6 @@ dateCreated: 2025-12-30T14:26:42.205Z
 type: Feature Enhancement
 priority: Medium
 implementationDate: 2026-01-01
-implementationNotes: Completed Phase 1-5: SCIP parsing, symbol indexing, query engine with filtering (from/folder), CLI with text/JSON formatters, multi-SCIP support for cross-package queries. Fixed line/column number conversion from 0-based (SCIP) to 1-based (display). All phases implemented and tested.
 ---
 
 # Type-Aware SCIP Code Search Tool

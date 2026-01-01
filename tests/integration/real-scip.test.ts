@@ -6,32 +6,13 @@
  * Status: RED (implementation pending)
  */
 
-import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { runCli } from '../helpers/cli-runner';
 
 describe('Real SCIP Integration Tests', () => {
-  const cliPath = path.join(process.cwd(), 'dist/src/cli.js');
   // Path to the markdown-ticket project SCIP file
   const realScipPath = path.join(process.cwd(), 'markdown-ticket/index.scip');
-
-  const runCli = (args: string): { stdout: string; stderr: string; exitCode: number } => {
-    try {
-      // Use shell redirection to capture both stdout and stderr
-      const stdout = execSync(`node ${cliPath} ${args} 2>&1`, {
-        encoding: 'utf-8'
-      });
-      // With redirection 2>&1, stderr goes to stdout in the result
-      // We can't easily separate them, so put everything in stdout
-      return { stdout, stderr: '', exitCode: 0 };
-    } catch (error: any) {
-      return {
-        stdout: error.stdout?.toString() || '',
-        stderr: error.stderr?.toString() || error.message,
-        exitCode: error.status || 1
-      };
-    }
-  };
 
   // Skip all tests if real SCIP file doesn't exist
   beforeAll(() => {

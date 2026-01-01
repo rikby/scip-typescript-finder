@@ -6,30 +6,12 @@
  * Status: RED (implementation pending)
  */
 
-import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { runCli } from '../helpers/cli-runner';
 
 describe('CLI Integration Tests', () => {
-  const cliPath = path.join(process.cwd(), 'dist/src/cli.js');
   const testScipPath = path.join(process.cwd(), 'tests/fixtures/index.scip');
-
-  // Helper to run CLI command
-  const runCli = (args: string): { stdout: string; stderr: string; exitCode: number } => {
-    try {
-      const stdout = execSync(`node ${cliPath} ${args}`, {
-        encoding: 'utf-8',
-        stdio: 'pipe'
-      });
-      return { stdout, stderr: '', exitCode: 0 };
-    } catch (error: any) {
-      return {
-        stdout: error.stdout || '',
-        stderr: error.stderr || error.message,
-        exitCode: error.status || 1
-      };
-    }
-  };
 
   // Phase 3 - Requirement 11: CLI Help and Usage
   describe('CLI Help and Usage (R11)', () => {

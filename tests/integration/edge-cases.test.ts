@@ -6,30 +6,13 @@
  * Status: RED (implementation pending)
  */
 
-import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { generateAllFixtures } from '../fixtures/edge-cases/scip-fixture-generator';
+import { runCli } from '../helpers/cli-runner';
 
 describe('Phase 4: Hardening - Edge Cases', () => {
-  const cliPath = path.join(process.cwd(), 'dist/src/cli.js');
   const fixturesDir = path.join(process.cwd(), 'tests/fixtures/edge-cases');
-
-  const runCli = (args: string): { stdout: string; stderr: string; exitCode: number } => {
-    try {
-      const stdout = execSync(`node ${cliPath} ${args}`, {
-        encoding: 'utf-8',
-        stdio: 'pipe'
-      });
-      return { stdout, stderr: '', exitCode: 0 };
-    } catch (error: any) {
-      return {
-        stdout: error.stdout || '',
-        stderr: error.stderr || error.message,
-        exitCode: error.status || 1
-      };
-    }
-  };
 
   // Generate fixtures before running tests
   beforeAll(async () => {
@@ -346,23 +329,7 @@ describe('Phase 4: Hardening - Edge Cases', () => {
 });
 
 describe('Phase 4: Error Message Quality', () => {
-  const cliPath = path.join(process.cwd(), 'dist/src/cli.js');
-
-  const runCli = (args: string): { stdout: string; stderr: string; exitCode: number } => {
-    try {
-      const stdout = execSync(`node ${cliPath} ${args}`, {
-        encoding: 'utf-8',
-        stdio: 'pipe'
-      });
-      return { stdout, stderr: '', exitCode: 0 };
-    } catch (error: any) {
-      return {
-        stdout: error.stdout || '',
-        stderr: error.stderr || error.message,
-        exitCode: error.status || 1
-      };
-    }
-  };
+  // Note: runCli is imported from shared helper at top of file
 
   describe('error messages should be actionable', () => {
     it('should suggest --scip when SCIP file not found', () => {
