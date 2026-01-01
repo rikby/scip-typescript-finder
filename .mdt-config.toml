@@ -1,0 +1,12 @@
+[project]
+ticketsPath = "docs/CRs"
+id = "scip-finder"
+name = "SCIP Finder"
+code = "SCF"
+startNumber = 1
+counterFile = ".mdt-next"
+description = ""
+repository = ""
+path = "."
+
+[document]

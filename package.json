@@ -1,0 +1,36 @@
+{
+  "name": "scip-finder",
+  "version": "0.0.1",
+  "description": "SCIP symbol search CLI tool",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "scip-finder": "./bin/scip-finder.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:unit": "jest tests/unit/"
+  },
+  "keywords": [
+    "scip",
+    "symbol",
+    "search",
+    "cli"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "protobufjs": "^8.0.0",
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
