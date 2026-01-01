@@ -7,14 +7,8 @@
  * Index structure: Map<"package:file:name", Occurrence[]>
  */
 
-import type { ScipIndex } from './scip-loader.js';
-import {
-  extractPackageName,
-  extractDisplayName,
-  extractFilePath,
-  getSymbolKey,
-  normalizeSymbolPath,
-} from '../utils/symbol-parser.js';
+import type { ScipIndex, ScipOccurrence } from './scip-loader.js';
+import { getSymbolKey } from '../utils/symbol-parser.js';
 
 /** Symbol occurrence with location and role information */
 export interface Occurrence {
@@ -27,6 +21,160 @@ export interface Occurrence {
   roles: number;
 }
 
+/** Parsed SCIP range with start and end positions */
+interface ParsedRange {
+  startLine: number;
+  startChar: number;
+  endLine: number;
+  endChar: number;
+}
+
+/** Variant map buckets for separating .ts and .d.ts occurrences */
+interface VariantBuckets {
+  ts: Occurrence[];
+  dts: Occurrence[];
+}
+
+/**
+ * Parse SCIP range array into start/end positions.
+ * SCIP ranges can be 3 elements [startLine, startChar, endChar] or 4 elements [startLine, startChar, endLine, endChar]
+ */
+function parseRange(range: number[]): ParsedRange | null {
+  if (range.length < 3) {
+    return null;
+  }
+
+  const [startLine, startChar, ...rest] = range;
+  const endLine = range.length === 3 ? startLine : rest[0];
+  const endChar = range.length === 3 ? rest[0] : rest[1];
+
+  return { startLine, startChar, endLine, endChar };
+}
+
+/**
+ * Convert SCIP occurrence to indexed occurrence with location info.
+ */
+function toIndexedOccurrence(
+  occ: ScipOccurrence,
+  docPath: string,
+  range: ParsedRange
+): Occurrence {
+  return {
+    symbol: occ.symbol || '',
+    filePath: docPath,
+    line: range.startLine,
+    column: range.startChar,
+    endLine: range.endLine,
+    endColumn: range.endChar,
+    roles: occ.symbolRoles || 0,
+  };
+}
+
+/**
+ * Get or create variant buckets for a symbol key.
+ */
+function getOrCreateBuckets(
+  map: Map<string, VariantBuckets>,
+  key: string
+): VariantBuckets {
+  if (!map.has(key)) {
+    map.set(key, { ts: [], dts: [] });
+  }
+  return map.get(key)!;
+}
+
+/**
+ * Check if a file path is a declaration file (.d.ts).
+ */
+function isDeclarationFile(filePath: string): boolean {
+  return filePath.endsWith('.d.ts');
+}
+
+/**
+ * Validate and parse SCIP occurrence range.
+ */
+function parseOccurrenceRange(occ: ScipOccurrence): ParsedRange | null {
+  const range = occ.range;
+  if (!range || range.length < 3) {
+    return null;
+  }
+  return parseRange(range);
+}
+
+/**
+ * Add occurrence to the appropriate bucket based on file type.
+ */
+function addToBucket(
+  buckets: VariantBuckets,
+  occurrence: Occurrence,
+  docPath: string
+): void {
+  if (isDeclarationFile(docPath)) {
+    buckets.dts.push(occurrence);
+  } else {
+    buckets.ts.push(occurrence);
+  }
+}
+
+/**
+ * Process a single SCIP occurrence and add it to the variant map.
+ */
+function processOccurrence(
+  variantMap: Map<string, VariantBuckets>,
+  occ: ScipOccurrence,
+  docPath: string
+): void {
+  const symbol = occ.symbol;
+  if (!symbol) return;
+
+  const parsedRange = parseOccurrenceRange(occ);
+  if (!parsedRange) return;
+
+  const occurrence = toIndexedOccurrence(occ, docPath, parsedRange);
+  const key = getSymbolKey(symbol);
+  const buckets = getOrCreateBuckets(variantMap, key);
+  addToBucket(buckets, occurrence, docPath);
+}
+
+/**
+ * Process all occurrences from a single document.
+ */
+function processDocument(
+  variantMap: Map<string, VariantBuckets>,
+  docPath: string,
+  occurrences: ScipOccurrence[]
+): void {
+  for (const occ of occurrences) {
+    processOccurrence(variantMap, occ, docPath);
+  }
+}
+
+/**
+ * Process a document from SCIP index.
+ */
+function processDocumentFromIndex(
+  variantMap: Map<string, VariantBuckets>,
+  doc: { relativePath?: string; occurrences?: ScipOccurrence[] }
+): void {
+  const docPath = doc.relativePath || '';
+  const occurrences = doc.occurrences || [];
+  processDocument(variantMap, docPath, occurrences);
+}
+
+/**
+ * Process all documents and build the variant map.
+ */
+function buildVariantMap(scipIndex: ScipIndex): Map<string, VariantBuckets> {
+  const variantMap = new Map<string, VariantBuckets>();
+  const documents = scipIndex.documents || [];
+
+  for (const doc of documents) {
+    processDocumentFromIndex(variantMap, doc);
+  }
+
+  return variantMap;
+}
+
 /**
  * Build symbol lookup index from SCIP data (R1, R4, R5).
  * Creates Map<"package:file:name", Occurrence[]> for O(1) symbol lookup.
@@ -36,60 +184,45 @@ export interface Occurrence {
  */
 export function buildSymbolIndex(scipIndex: ScipIndex): Map<string, Occurrence[]> {
   const index = new Map<string, Occurrence[]>();
-  const variantMap = new Map<string, Occurrence[][]>();
+  const variantMap = buildVariantMap(scipIndex);
 
-  const documents = scipIndex.documents || [];
-  for (const doc of documents) {
-    const docPath = doc.relativePath || '';
-    const occurrences = doc.occurrences || [];
-
-    for (const occ of occurrences) {
-      const symbol = occ.symbol || '';
-      if (!symbol) continue;
-
-      const roles = occ.symbolRoles || 0;
-      const range = occ.range || [];
-
-      // SCIP ranges can be 3 elements [startLine, startChar, endChar] or 4 elements [startLine, startChar, endLine, endChar]
-      if (range.length < 3) continue;
-
-      const [startLine, startChar, ...rest] = range;
-      // If 3 elements: [startLine, startChar, endChar], endLine = startLine
-      // If 4 elements: [startLine, startChar, endLine, endChar]
-      const endLine = range.length === 3 ? startLine : rest[0];
-      const endChar = range.length === 3 ? rest[0] : rest[1];
-
-      const occurrence: Occurrence = {
-        symbol,
-        filePath: docPath,
-        line: startLine,
-        column: startChar,
-        endLine: endLine,
-        endColumn: endChar,
-        roles,
-      };
-
-      const key = getSymbolKey(symbol);
-
-      if (!variantMap.has(key)) {
-        variantMap.set(key, [[], []]);
-      }
-
-      const [tsOccs, dtsOccs] = variantMap.get(key)!;
-      if (docPath.endsWith('.d.ts')) {
-        dtsOccs.push(occurrence);
-      } else {
-        tsOccs.push(occurrence);
-      }
-    }
-  }
-
-  for (const [key, [tsOccs, dtsOccs]] of variantMap) {
-    const merged = mergeSymbolVariants(tsOccs, dtsOccs);
+  for (const [key, { ts, dts }] of variantMap) {
+    const merged = mergeSymbolVariants(ts, dts);
     index.set(key, merged);
   }
 
   return index;
+}
+
+/** Deduplication state for merging occurrences */
+interface DedupeState {
+  seen: Set<string>;
+  merged: Occurrence[];
+}
+
+/** Create dedupe key for an occurrence */
+function makeDedupeKey(occ: Occurrence): string {
+  return `${occ.filePath}:${occ.line}:${occ.column}`;
+}
+
+/**
+ * Add a single occurrence if not already seen.
+ */
+function addUniqueOccurrence(state: DedupeState, occ: Occurrence): void {
+  const key = makeDedupeKey(occ);
+  if (!state.seen.has(key)) {
+    state.seen.add(key);
+    state.merged.push(occ);
+  }
+}
+
+/**
+ * Add occurrences to merged array if not already seen.
+ */
+function addUniqueOccurrences(state: DedupeState, occurrences: Occurrence[]): void {
+  for (const occ of occurrences) {
+    addUniqueOccurrence(state, occ);
+  }
 }
 
 /**
@@ -104,24 +237,10 @@ export function mergeSymbolVariants(
   tsOccurrences: Occurrence[],
   dtsOccurrences: Occurrence[]
 ): Occurrence[] {
-  const seen = new Set<string>();
-  const merged: Occurrence[] = [];
+  const state: DedupeState = { seen: new Set<string>(), merged: [] };
 
-  const addUnique = (occ: Occurrence) => {
-    const dedupeKey = `${occ.filePath}:${occ.line}:${occ.column}`;
-    if (!seen.has(dedupeKey)) {
-      seen.add(dedupeKey);
-      merged.push(occ);
-    }
-  };
+  addUniqueOccurrences(state, tsOccurrences);
+  addUniqueOccurrences(state, dtsOccurrences);
 
-  for (const occ of tsOccurrences) {
-    addUnique(occ);
-  }
-
-  for (const occ of dtsOccurrences) {
-    addUnique(occ);
-  }
-
-  return merged;
+  return state.merged;
 }

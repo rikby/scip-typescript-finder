@@ -23,6 +23,9 @@ export interface QueryResult extends Occurrence {
   isDefinition: boolean;
 }
 
+/** SCIP role bit flag for definition */
+const DEFINITION_ROLE = 0x1;
+
 /**
  * Query engine for fast symbol lookup with filtering.
  * Supports symbol search by name, definition file filtering, folder scope filtering, and package-aware distinction.
@@ -43,50 +46,80 @@ export class QueryEngine {
       return [];
     }
 
-    const from = options?.from;
-    const folder = options?.folder
-      ? options.folder.endsWith('/')
-        ? options.folder
-        : `${options.folder}/`
-      : undefined;
-
+    const folder = normalizeFolderPath(options?.folder);
     const results: QueryResult[] = [];
 
     for (const [key, occurrences] of this.symbolIndex) {
-      const keyParts = key.split(':');
-      if (keyParts.length !== 3) continue;
+      const parsedKey = parseSymbolKey(key);
+      if (!parsedKey) continue;
 
-      const [, definingFile, name] = keyParts;
+      const { name } = parsedKey;
 
-      // Task 2.1: Case-sensitive exact match on symbol name
       if (name !== symbolName) continue;
 
-      // Task 2.2: Filter by definition file (--from)
-      // Check if any definition occurrence in this symbol comes from the specified file
-      if (from) {
-        const hasDefinitionInFile = occurrences.some(
-          occ => (occ.roles & 0x1) !== 0 && occ.filePath === from
-        );
-        if (!hasDefinitionInFile) continue;
-      }
+      if (!this.matchesFromFilter(occurrences, options?.from)) continue;
 
-      // Task 2.3 & 2.4: Filter by folder and preserve package info
-      for (const occ of occurrences) {
-        if (folder && !occ.filePath.startsWith(folder)) continue;
-
-        results.push({
-          symbol: occ.symbol,
-          filePath: occ.filePath,
-          line: occ.line,
-          column: occ.column,
-          endLine: occ.endLine,
-          endColumn: occ.endColumn,
-          roles: occ.roles,
-          isDefinition: (occ.roles & 0x1) !== 0,
-        });
-      }
+      const matchingOccurrences = filterByFolder(occurrences, folder);
+      results.push(...matchingOccurrences.map(toQueryResult));
     }
 
     return results;
   }
+
+  /**
+   * Check if occurrences match the 'from' filter (R2).
+   * Returns true if any definition occurrence is from the specified file.
+   */
+  private matchesFromFilter(occurrences: Occurrence[], from?: string): boolean {
+    if (!from) return true;
+
+    return occurrences.some(
+      occ => (occ.roles & DEFINITION_ROLE) !== 0 && occ.filePath === from
+    );
+  }
+}
+
+/**
+ * Normalize folder path to ensure trailing slash.
+ */
+function normalizeFolderPath(folder?: string): string | undefined {
+  if (!folder) return undefined;
+  return folder.endsWith('/') ? folder : `${folder}/`;
+}
+
+/**
+ * Parse symbol index key into components.
+ * Expected format: "package:file:name"
+ */
+function parseSymbolKey(key: string): { definingFile: string; name: string } | null {
+  const parts = key.split(':');
+  if (parts.length !== 3) return null;
+
+  const [, definingFile, name] = parts;
+  return { definingFile, name };
+}
+
+/**
+ * Filter occurrences by folder path (R3).
+ */
+function filterByFolder(occurrences: Occurrence[], folder?: string): Occurrence[] {
+  if (!folder) return occurrences;
+
+  return occurrences.filter(occ => occ.filePath.startsWith(folder));
+}
+
+/**
+ * Convert Occurrence to QueryResult with isDefinition flag.
+ */
+function toQueryResult(occ: Occurrence): QueryResult {
+  return {
+    symbol: occ.symbol,
+    filePath: occ.filePath,
+    line: occ.line,
+    column: occ.column,
+    endLine: occ.endLine,
+    endColumn: occ.endColumn,
+    roles: occ.roles,
+    isDefinition: (occ.roles & DEFINITION_ROLE) !== 0,
+  };
 }
