@@ -1,6 +1,6 @@
 {
   "name": "scip-finder",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "SCIP symbol search CLI tool",
   "type": "module",
   "main": "./dist/index.js",
