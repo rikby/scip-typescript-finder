@@ -1,15 +1,22 @@
 {
   "name": "scip-finder",
   "version": "0.1.0",
-  "description": "SCIP symbol search CLI tool",
+  "description": "Fast TypeScript symbol search using SCIP code intelligence indexes",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
     "scip-finder": "./bin/scip-finder.js",
     "scip-index": "./bin/scip-index.js"
   },
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc && mkdir -p dist/bundle && cp src/bundle/scip.proto dist/bundle/",
+    "prepublishOnly": "npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:unit": "jest tests/unit/"
@@ -18,9 +25,20 @@
     "scip",
     "symbol",
     "search",
-    "cli"
+    "cli",
+    "typescript",
+    "code-intelligence",
+    "sourcegraph"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rikby/scip-typescript-finder.git"
+  },
+  "homepage": "https://github.com/rikby/scip-typescript-finder#readme",
+  "bugs": {
+    "url": "https://github.com/rikby/scip-typescript-finder/issues"
+  },
   "dependencies": {
     "protobufjs": "^8.0.0",
     "commander": "^12.0.0"

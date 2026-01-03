@@ -1,0 +1,37 @@
+# Source files
+src/
+tsconfig*.json
+*.ts
+*.ts.map
+
+# Tests
+tests/
+jest.config.js
+coverage/
+*.test.ts
+
+# Documentation
+docs/
+markdown-ticket/
+.claude/
+claudedocs/
+
+# CI/CD
+.github/
+
+# Development
+.git/
+.gitignore
+.idea/
+*.log
+.env
+
+# Build artifacts that shouldn't be published
+index*.scip
+ts-metrics-refactor.zip
+test-cross-package-search.sh
+
+# Misc
+1.txt
+.mdt-config.toml
+.DS_Store
