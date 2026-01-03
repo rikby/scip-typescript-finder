@@ -5,6 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import protobuf from 'protobufjs';
 import type { ScipIndex } from './scip-types.js';
 import { parseJsonIndex } from './scip-json-normalizer.js';
@@ -19,9 +20,10 @@ export type {
   ScipDiagnostic,
 } from './scip-types.js';
 
-// Get the project root - works in both dev and production
-const projectRoot = process.cwd();
-const protoPath = path.join(projectRoot, 'src/bundle/scip.proto');
+// Get the directory of this module (works in both dev and production)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const protoPath = path.join(__dirname, '../bundle/scip.proto');
 
 const MAX_PARENT_SEARCH = 10;
 

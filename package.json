@@ -5,10 +5,11 @@
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "scip-finder": "./bin/scip-finder.js"
+    "scip-finder": "./bin/scip-finder.js",
+    "scip-index": "./bin/scip-index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/bundle && cp src/bundle/scip.proto dist/bundle/",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:unit": "jest tests/unit/"

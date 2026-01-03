@@ -60,7 +60,7 @@ export function main(): void {
     .option('--from <file>', 'Filter to symbols defined in specific file')
     .option('--folder <path>', 'Filter occurrences to files within folder')
     .option('--format <type>', 'Output format: text or json (default: text)', 'text')
-    .addHelpText('after', '\nExamples:\n  $ scip-finder MyFunction\n  $ scip-finder --scip ./index.scip Ticket\n  $ scip-finder --from src/models/Ticket.ts Ticket\n  $ scip-finder --folder src/ Ticket\n  $ scip-finder --format json Ticket\n  $ scip-finder --from src/index.ts --format json main\n\nFor more information, visit: https://github.com/sourcegraph/scip\n')
+    .addHelpText('after', '\nExamples:\n  $ scip-finder MyFunction\n  $ scip-finder --scip ./index.scip SymbolName\n  $ scip-finder --from lib/main.ts SymbolName\n  $ scip-finder --folder src/ SymbolName\n  $ scip-finder --format json SymbolName\n  $ scip-finder --from lib/main.ts --format json SymbolName\n\nFor more information, visit: https://github.com/sourcegraph/scip\n')
     .action(handleCommand)
     .parse();
 }
