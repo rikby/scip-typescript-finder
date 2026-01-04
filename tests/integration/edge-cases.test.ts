@@ -30,8 +30,14 @@ describe('Phase 4: Hardening - Edge Cases', () => {
     });
 
     it('should suggest using --scip option if file not found', () => {
-      const result = runCli('Ticket');
+      // Create a temporary directory without index.scip
+      const tempDir = '/tmp/scip-test-no-scip';
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
 
+      // Run CLI from temp directory (without index.scip)
+      const result = runCli('Ticket', { cwd: tempDir });
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toMatch(/scip/i);
       expect(result.stderr).toContain('--scip');
@@ -333,7 +339,14 @@ describe('Phase 4: Error Message Quality', () => {
 
   describe('error messages should be actionable', () => {
     it('should suggest --scip when SCIP file not found', () => {
-      const result = runCli('Ticket');
+      // Create a temporary directory without index.scip
+      const tempDir = '/tmp/scip-test-no-scip';
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      // Run CLI from temp directory (without index.scip)
+      const result = runCli('Ticket', { cwd: tempDir });
       expect(result.stderr).toContain('--scip');
     });
 

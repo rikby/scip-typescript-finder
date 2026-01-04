@@ -73,7 +73,14 @@ describe('CLI Integration Tests', () => {
 
     describe('when SCIP file is not provided and not found', () => {
       it('should display error message indicating how to specify SCIP file', () => {
-        const result = runCli('Ticket');
+        // Create a temporary directory without index.scip
+        const tempDir = '/tmp/scip-test-no-scip';
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        // Run CLI from temp directory (without index.scip)
+        const result = runCli('Ticket', { cwd: tempDir });
         expect(result.exitCode).toBe(1);
         expect(result.stderr).toMatch(/scip.*file/i);
         expect(result.stderr).toContain('--scip');
