@@ -8,7 +8,8 @@
  */
 
 import type { ScipIndex, ScipOccurrence } from './scip-loader.js';
-import { getSymbolKey } from '../utils/symbol-parser.js';
+import { SymbolParser } from './scip/SymbolParser.js';
+import { SymbolIndexKey } from './scip/SymbolIndexKey.js';
 
 /** Symbol occurrence with location and role information */
 export interface Occurrence {
@@ -91,6 +92,16 @@ function isDeclarationFile(filePath: string): boolean {
 }
 
 /**
+ * Convert .d.ts to .ts for lookup, preserving other paths unchanged.
+ */
+function normalizeSymbolPath(path: string): string {
+  if (isDeclarationFile(path)) {
+    return path.replace(/\.d\.ts$/, '.ts');
+  }
+  return path;
+}
+
+/**
  * Validate and parse SCIP occurrence range.
  */
 function parseOccurrenceRange(occ: ScipOccurrence): ParsedRange | null {
@@ -131,7 +142,19 @@ function processOccurrence(
   if (!parsedRange) return;
 
   const occurrence = toIndexedOccurrence(occ, docPath, parsedRange);
-  const key = getSymbolKey(symbol);
+  const parser = new SymbolParser();
+  const parsed = parser.parse(symbol);
+  const normalizedPath = normalizeSymbolPath(parsed.filePath);
+
+  // Use SymbolIndexKey value object for generating index keys
+  const indexKey = new SymbolIndexKey(
+    parsed.packageName,
+    normalizedPath,
+    parsed.displayName,
+    parsed.suffix
+  );
+  const key = indexKey.toString();
+
   const buckets = getOrCreateBuckets(variantMap, key);
   addToBucket(buckets, occurrence, docPath);
 }

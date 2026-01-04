@@ -20,15 +20,56 @@ export type {
   ScipDiagnostic,
 } from './scip-types.js';
 
-// Get the directory of this module (works in both dev and production)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const protoPath = path.join(__dirname, '../bundle/scip.proto');
-
 const MAX_PARENT_SEARCH = 10;
+
+// Get the directory of this module
+let moduleDir: string;
+try {
+  // In production (ESM): use import.meta.url
+  const moduleUrl = import.meta.url;
+  const modulePath = fileURLToPath(moduleUrl);
+  moduleDir = path.dirname(modulePath);
+} catch {
+  // Fallback for test environments
+  moduleDir = path.join(process.cwd(), 'dist/core');
+}
+
+// Default proto path - relative to the module directory
+// In dev: project-root/src/bundle/scip.proto
+// In production: project-root/dist/bundle/scip.proto
+const DEFAULT_PROTO_PATH = path.join(moduleDir, '../bundle/scip.proto');
+
+/** Get the proto file path - supports environment variable override */
+function getProtoPath(): string {
+  // Allow override via environment variable (for testing)
+  if (process.env.SCIP_PROTO_PATH) {
+    return process.env.SCIP_PROTO_PATH;
+  }
+
+  // Check if default path exists, if not try relative to module
+  if (fs.existsSync(DEFAULT_PROTO_PATH)) {
+    return DEFAULT_PROTO_PATH;
+  }
+
+  // Try dist directory (production build)
+  const distProtoPath = path.join(moduleDir, '../bundle/scip.proto');
+  if (fs.existsSync(distProtoPath)) {
+    return distProtoPath;
+  }
+
+  // Try src directory (development)
+  const srcProtoPath = path.join(moduleDir, '../../src/bundle/scip.proto');
+  if (fs.existsSync(srcProtoPath)) {
+    return srcProtoPath;
+  }
+
+  // Last resort: use default and let the error happen
+  return DEFAULT_PROTO_PATH;
+}
 
 /** Parse protobuf content as SCIP index */
 function parseProtobufIndex(buffer: Buffer): ScipIndex {
+  const protoPath = getProtoPath();
   const root = protobuf.loadSync(protoPath);
   const ScipIndexMessage = root.lookupType('scip.Index');
   const decoded = ScipIndexMessage.decode(buffer);

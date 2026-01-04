@@ -6,15 +6,37 @@
 import { Command } from 'commander';
 import { findScipFile, loadScipIndex } from '../core/scip-loader.js';
 import { buildSymbolIndex } from '../core/symbol-indexer.js';
-import { QueryEngine } from '../core/query-engine.js';
+import { QueryEngine, type QueryResult } from '../core/query-engine.js';
 import { formatAsText, formatAsJson, OutputFormat } from './formatter.js';
-import { handleFromFilter } from '../utils/index.js';
 
 interface CliOptions {
   scip?: string;
   from?: string;
   folder?: string;
   format?: OutputFormat;
+}
+
+/**
+ * Apply --from filter with fallback warning.
+ * If --from was specified but no results found, show warning and return all results.
+ * Only shows warning in text mode (not JSON mode to avoid breaking JSON parsing).
+ */
+function applyFromFilter(
+  queryEngine: QueryEngine,
+  symbolName: string,
+  from: string | undefined,
+  folder: string | undefined,
+  format: OutputFormat,
+  initialResults: QueryResult[]
+): QueryResult[] {
+  if (from && initialResults.length === 0 && format === 'text') {
+    const allResults = queryEngine.find(symbolName, { folder });
+    if (allResults.length > 0) {
+      console.log(`Warning: Symbol '${symbolName}' is not defined in '${from}'. Showing all occurrences.\n`);
+      return allResults;
+    }
+  }
+  return initialResults;
 }
 
 function handleCommand(symbolName: string, options: CliOptions): void {
@@ -41,7 +63,7 @@ function handleCommand(symbolName: string, options: CliOptions): void {
   const queryEngine = new QueryEngine(symbolIndex);
 
   let results = queryEngine.find(symbolName, { from: options.from, folder: options.folder });
-  results = handleFromFilter(queryEngine, symbolName, options.from, options.folder, format, results);
+  results = applyFromFilter(queryEngine, symbolName, options.from, options.folder, format, results);
 
   console.log(format === 'json' ? formatAsJson(symbolName, results) : formatAsText(symbolName, results));
 }

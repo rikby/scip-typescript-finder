@@ -8,7 +8,6 @@
  */
 
 import type { Occurrence } from './symbol-indexer.js';
-import { extractPackageName } from '../utils/symbol-parser.js';
 
 /** Query options for filtering search results */
 export interface QueryOptions {
