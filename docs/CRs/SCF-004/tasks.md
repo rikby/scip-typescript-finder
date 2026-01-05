@@ -139,11 +139,11 @@ npm run build
 ```
 
 **Done when**:
-- [ ] All 20 query-syntax tests GREEN (were RED)
-- [ ] File at `src/cli/query-syntax.ts`
-- [ ] Size ≤ 60 lines
-- [ ] Exports both functions
-- [ ] Imports SuffixType (no duplication)
+- [x] All 20 query-syntax tests GREEN (were RED)
+- [x] File at `src/cli/query-syntax.ts`
+- [x] Size ≤ 60 lines (actual: 39)
+- [x] Exports both functions
+- [x] Imports SuffixType (no duplication)
 
 ---
 
@@ -196,11 +196,105 @@ npm run build
 ```
 
 **Done when**:
-- [ ] All 15 query-engine-suffix-filter tests GREEN (were RED)
-- [ ] `QueryOptions.suffixFilter` field added
-- [ ] `QueryResult.suffix` field added
-- [ ] Size ≤ 164 lines
-- [ ] Backward compatible (undefined = wildcard)
+- [x] All 15 query-engine-suffix-filter tests GREEN (were RED)
+- [x] `QueryOptions.suffixFilter` field added
+- [x] `QueryResult.suffix` field added
+- [x] Size ≤ 164 lines (actual: 141)
+- [x] Backward compatible (undefined = wildcard)
+
+---
+
+## Phase 3: CLI Integration
+
+### Task 3: Integrate syntax detection in CLI
+
+**Structure**: `src/cli/index.ts`
+
+**Implements**: R3.1-R3.6, FR-4, FR-5
+
+**Makes GREEN**:
+- Integration tests (manual CLI verification)
+- `query-syntax.test.ts`: Integration scenarios
+
+**Limits**:
+- Baseline: 88 lines
+- Default: 113 lines (+25)
+- Hard Max: 170 lines
+- If > 113: ⚠️ flag
+- If > 170: ⛔ STOP
+
+**Add imports**:
+- `detectQuerySyntax` from `./query-syntax.js`
+- `stripMethodParameters` from `./query-syntax.js`
+- `SuffixType` from `../core/scip/SuffixType.js`
+
+**Modify** `handleCommand()`:
+- Detect query syntax: `const suffixFilter = detectQuerySyntax(symbolName)`
+- Strip parameters: `const baseSymbolName = stripMethodParameters(symbolName)`
+- Pass to query engine: `queryEngine.find(baseSymbolName, { from: options.from, folder: options.folder, suffixFilter })`
+
+**Update** help text:
+- Add property search example: `$ scip-finder MyThing.myProp`
+- Add method search example: `$ scip-finder MyThing.method()`
+- Document auto-detection behavior
+
+**Exclude**:
+- Syntax detection logic (use import from Task 1)
+- Query engine logic (use import from Task 2)
+
+**Anti-duplication**:
+- Import `detectQuerySyntax` and `stripMethodParameters` — do NOT reimplement
+- Import `SuffixType` — do NOT redefine
+
+**Verify**:
+```bash
+wc -l src/cli/index.ts             # ≤ 113
+npm test
+npm run build
+scip-finder --help                 # Check examples
+```
+
+**Done when**:
+- [x] CLI imports from `query-syntax.ts`
+- [x] Help text includes property/method examples
+- [x] Size ≤ 113 lines (actual: 94)
+- [x] Backward compatible (existing commands work)
+
+---
+
+## Phase 4: Documentation
+
+### Task 4: Update documentation
+
+**Structure**: `README.md`
+
+**Implements**: NFR-U3
+
+**Makes GREEN**:
+- Manual verification tests (documentation examples work)
+
+**Add** to README usage examples:
+- Property search: `scip-finder MyThing.myProp`
+- Method search: `scip-finder MyThing.method()`
+- Wildcard search: `scip-finder process` (matches both)
+
+**Document** auto-detection behavior:
+- Query syntax determines suffix type
+- No flags needed
+- Backward compatible
+
+**Verify**:
+```bash
+# Test examples from README
+scip-finder MyThing.myProp
+scip-finder MyThing.method()
+scip-finder process
+```
+
+**Done when**:
+- [x] README.md includes property/method examples
+- [x] Auto-detection behavior documented
+- [x] All examples work as documented
 
 ---
 

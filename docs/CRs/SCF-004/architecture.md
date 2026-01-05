@@ -51,12 +51,13 @@ graph TB
 | Component | Responsibility | Owns | Depends On |
 |-----------|----------------|------|------------|
 | `cli/index.ts` | CLI entry point, commander.js setup, help text | Command routing, error handling | `query-syntax.ts`, `QueryEngine` |
-| `cli/query-syntax.ts` | Parse query syntax, detect suffix type, strip parameters | Syntax detection logic, parameter stripping | `SuffixType` enum |
-| `core/query-engine.ts` | Symbol lookup with suffix filtering | Query execution, index-level filtering | `SymbolIndex`, `SuffixType` |
+| `cli/query-syntax.ts` | Parse query syntax, detect suffix type | Syntax detection logic | `SuffixType` enum |
+| `core/query-engine.ts` | Symbol lookup with suffix filtering, qualified name matching | Query execution, index-level filtering, dot-to-hash conversion | `SymbolIndex`, `SuffixType` |
 | `core/scip/SuffixType.ts` | SCIP suffix type enumeration (from prep) | Suffix type constants | — |
-| `core/scip/SymbolParser.ts` | Parse SCIP symbol strings with suffix extraction | Symbol parsing, suffix preservation | `SuffixType` |
-| `core/symbol-indexer.ts` | Build index with suffix-aware keys | Index map generation | `SymbolParser` |
-| `cli/formatter.ts` | Format query results (text/JSON) | Output rendering | — |
+| `core/scip/SymbolParser.ts` | Parse SCIP symbol strings, extract leaf name from hierarchical descriptors | Symbol parsing, suffix preservation, leaf name extraction | `SuffixType` |
+| `core/scip/SymbolIndexKey.ts` | Value object for symbol index keys with full descriptor support | Key generation, full descriptor storage | `SuffixType` |
+| `core/symbol-indexer.ts` | Build index with suffix-aware keys using full descriptors | Index map generation | `SymbolParser`, `SymbolIndexKey` |
+| `cli/formatter.ts` | Format query results (text/JSON) with 0-based to 1-based line conversion | Output rendering | — |
 
 ## Key Dependencies
 
@@ -74,6 +75,9 @@ graph TB
 |----------|---------|----------|
 | `detectQuerySyntax()` | Parse query string, return suffix type | `cli/query-syntax.ts` |
 | `stripMethodParameters()` | Remove `(...)` from method queries | `cli/query-syntax.ts` |
+| `extractLeafName()` | Extract leaf name from hierarchical SCIP descriptor | `core/scip/SymbolParser.ts` |
+| `convertToScipPattern()` | Convert dot notation to SCIP hash format (e.g., `Class.method` → `Class#method`) | `core/query-engine.ts` |
+| `matchesQualifiedName()` | Match qualified name queries against full descriptors | `core/query-engine.ts` |
 
 > Extract these first — they're pure functions with no dependencies.
 
@@ -82,18 +86,23 @@ graph TB
 ```
 src/
   ├── cli/
-  │   ├── index.ts                 → CLI entry point (add help examples)
+  │   ├── index.ts                 → CLI entry point (add help examples, qualified name support)
   │   ├── query-syntax.ts          → NEW: Syntax detection logic (60 lines)
-  │   └── formatter.ts             → Unchanged
+  │   └── formatter.ts             → Unchanged (SCIP 0-based to 1-based line conversion verified)
   ├── core/
-  │   ├── query-engine.ts          → ADD: suffix filtering capability (+40 lines)
+  │   ├── query-engine.ts          → ADD: suffix filtering, qualified name matching, dot-to-hash conversion (+80 lines)
   │   ├── scip-loader.ts           → Unchanged
-  │   ├── symbol-indexer.ts        → UPDATE: Use suffix-aware keys (prep done)
+  │   ├── symbol-indexer.ts        → UPDATE: Build index with full descriptors
   │   └── scip/
   │       ├── SuffixType.ts        → FROM PREP: Suffix enum
-  │       ├── SymbolParser.ts      → FROM PREP: Symbol parsing
-  │       └── SymbolIndexKey.ts    → FROM PREP: Key value object
+  │       ├── SymbolParser.ts      → FROM PREP: Symbol parsing + extractLeafName() helper
+  │       └── SymbolIndexKey.ts    → FROM PREP: Key value object + fullDescriptor property
 ```
+
+**Updated post-implementation (2026-01-05):**
+- `SymbolIndexKey` now stores `fullDescriptor` for qualified name searches
+- `SymbolParser.extractLeafName()` extracts `getAllProjects` from `ProjectService#getAllProjects().`
+- `QueryEngine` matches qualified names (dot/hash notation) against full descriptors
 
 ## Size Guidance
 
@@ -171,6 +180,7 @@ To add a new query syntax:
 | Invalid suffix type in query | Syntax parser returns `undefined` | Wildcard match (both types) | Graceful degradation |
 | SCIP index missing suffix | Lookup key has no suffix | Wildcard match (all types) | Backward compatible |
 | Malformed method syntax | `stripMethodParameters()` handles edge cases | Return base name or original query | Best-effort parsing |
+| Namespace suffix edge case | `extractLeafName()` detects trailing `/` | Returns namespace name without suffix | Handles `models/` → `models` |
 
 ## Testing Strategy
 
@@ -182,11 +192,13 @@ To add a new query syntax:
 - CLI with real SCIP index containing properties/methods
 - Backward compatibility (existing queries unchanged)
 - Combined filters (`--from` + suffix detection)
+- **Qualified name searches**: `Class.method()`, `Class#method`, `Class.property`
 
 **Snapshot Tests:**
 - `scip-finder MyThing.myProp` → only properties
 - `scip-finder MyThing.method()` → only methods
 - `scip-finder process` → both types (wildcard)
+- `scip-finder Class.method()` → methods of specific class only
 
 ---
 *Generated by /mdt:architecture*

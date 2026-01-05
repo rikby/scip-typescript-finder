@@ -91,6 +91,23 @@ $ scip-finder --format json SymbolName
 }
 ```
 
+### Property and Method Search (SCF-004)
+
+The CLI auto-detects property vs method search based on query syntax:
+
+```bash
+# Property search - names containing "." are treated as property queries
+scip-finder MyThing.myProp
+
+# Method search - names containing "()" are treated as method queries
+scip-finder MyThing.method()
+
+# Wildcard search - bare names match both properties and methods
+scip-finder process
+```
+
+No special flags required - queries are backward compatible with existing symbol search.
+
 ## Commands
 
 ### `scip-finder`

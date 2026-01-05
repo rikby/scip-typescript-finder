@@ -10,6 +10,7 @@
 import type { ScipIndex, ScipOccurrence } from './scip-loader.js';
 import { SymbolParser } from './scip/SymbolParser.js';
 import { SymbolIndexKey } from './scip/SymbolIndexKey.js';
+import { SuffixType } from './scip/SuffixType.js';
 
 /** Symbol occurrence with location and role information */
 export interface Occurrence {
@@ -20,6 +21,7 @@ export interface Occurrence {
   endLine: number;
   endColumn: number;
   roles: number;
+  suffix?: SuffixType;
 }
 
 /** Parsed SCIP range with start and end positions */
@@ -58,7 +60,8 @@ function parseRange(range: number[]): ParsedRange | null {
 function toIndexedOccurrence(
   occ: ScipOccurrence,
   docPath: string,
-  range: ParsedRange
+  range: ParsedRange,
+  suffix?: SuffixType
 ): Occurrence {
   return {
     symbol: occ.symbol || '',
@@ -68,6 +71,7 @@ function toIndexedOccurrence(
     endLine: range.endLine,
     endColumn: range.endChar,
     roles: occ.symbolRoles || 0,
+    suffix,
   };
 }
 
@@ -141,9 +145,9 @@ function processOccurrence(
   const parsedRange = parseOccurrenceRange(occ);
   if (!parsedRange) return;
 
-  const occurrence = toIndexedOccurrence(occ, docPath, parsedRange);
   const parser = new SymbolParser();
   const parsed = parser.parse(symbol);
+  const occurrence = toIndexedOccurrence(occ, docPath, parsedRange, parsed.suffix);
   const normalizedPath = normalizeSymbolPath(parsed.filePath);
 
   // Use SymbolIndexKey value object for generating index keys
@@ -151,7 +155,8 @@ function processOccurrence(
     parsed.packageName,
     normalizedPath,
     parsed.displayName,
-    parsed.suffix
+    parsed.suffix,
+    parsed.fullDescriptor
   );
   const key = indexKey.toString();
 

@@ -19,10 +19,10 @@
 | Req ID | Description | Test File | Scenarios | Status |
 |--------|-------------|-----------|-----------|--------|
 | R1.1-R1.5 | Suffix preservation | N/A (prep complete) | - | ✅ GREEN (prep phase) |
-| R2.1-R2.4 | Suffix-aware filtering | `query-engine-suffix-filter.test.ts` | 15 | 🔴 RED |
-| R3.1-R3.6 | CLI syntax auto-detection | `query-syntax.test.ts` | 20 | 🔴 RED |
-| R4.1-R4.3 | Backward compatibility | `query-engine-suffix-filter.test.ts` | 3 | 🔴 RED |
-| R5.1-R5.4 | Edge case handling | `query-syntax.test.ts`, `query-engine-suffix-filter.test.ts` | 10 | 🔴 RED |
+| R2.1-R2.4 | Suffix-aware filtering | `query-engine-suffix-filter.test.ts` | 15 | ✅ GREEN (Task 2) |
+| R3.1-R3.6 | CLI syntax auto-detection | `query-syntax.test.ts` | 20 | ✅ GREEN (Task 1) |
+| R4.1-R4.3 | Backward compatibility | `query-engine-suffix-filter.test.ts` | 3 | ✅ GREEN (Task 2) |
+| R5.1-R5.4 | Edge case handling | `query-syntax.test.ts`, `query-engine-suffix-filter.test.ts` | 10 | ✅ GREEN (Tasks 1,2) |
 
 ## Test Specifications
 
@@ -254,7 +254,7 @@ And results should satisfy all conditions
 
 | File | Scenarios | Lines | Status |
 |------|-----------|-------|--------|
-| `tests/unit/cli/query-syntax.test.ts` | 20 | ~210 | 🔴 RED |
+| `tests/unit/cli/query-syntax.test.ts` | 20 | ~210 | ✅ GREEN (Task 1) |
 | `tests/unit/core/query-engine-suffix-filter.test.ts` | 15 | ~280 | 🔴 RED |
 
 ## Verification

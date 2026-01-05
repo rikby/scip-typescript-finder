@@ -8,6 +8,8 @@ import { findScipFile, loadScipIndex } from '../core/scip-loader.js';
 import { buildSymbolIndex } from '../core/symbol-indexer.js';
 import { QueryEngine, type QueryResult } from '../core/query-engine.js';
 import { formatAsText, formatAsJson, OutputFormat } from './formatter.js';
+import { detectQuerySyntax, stripMethodParameters } from './query-syntax.js';
+import { SuffixType } from '../core/scip/SuffixType.js';
 
 interface CliOptions {
   scip?: string;
@@ -62,7 +64,12 @@ function handleCommand(symbolName: string, options: CliOptions): void {
   const symbolIndex = buildSymbolIndex(scipIndex);
   const queryEngine = new QueryEngine(symbolIndex);
 
-  let results = queryEngine.find(symbolName, { from: options.from, folder: options.folder });
+  // Auto-detect property/method syntax (SCF-004)
+  const suffixFilter = detectQuerySyntax(symbolName);
+
+  // For qualified name searches, pass the full symbol name to QueryEngine
+  // which will handle the conversion and matching internally
+  let results = queryEngine.find(symbolName, { from: options.from, folder: options.folder, suffixFilter });
   results = applyFromFilter(queryEngine, symbolName, options.from, options.folder, format, results);
 
   console.log(format === 'json' ? formatAsJson(symbolName, results) : formatAsText(symbolName, results));
@@ -82,7 +89,7 @@ export function main(): void {
     .option('--from <file>', 'Filter to symbols defined in specific file')
     .option('--folder <path>', 'Filter occurrences to files within folder')
     .option('--format <type>', 'Output format: text or json (default: text)', 'text')
-    .addHelpText('after', '\nExamples:\n  $ scip-finder MyFunction\n  $ scip-finder --scip ./index.scip SymbolName\n  $ scip-finder --from lib/main.ts SymbolName\n  $ scip-finder --folder src/ SymbolName\n  $ scip-finder --format json SymbolName\n  $ scip-finder --from lib/main.ts --format json SymbolName\n\nFor more information, visit: https://github.com/sourcegraph/scip\n')
+    .addHelpText('after', '\nExamples:\n  $ scip-finder MyFunction\n  $ scip-finder MyThing.myProp\n  $ scip-finder MyThing.method()\n  $ scip-finder --scip ./index.scip SymbolName\n  $ scip-finder --from lib/main.ts SymbolName\n  $ scip-finder --folder src/ SymbolName\n  $ scip-finder --format json SymbolName\n  $ scip-finder --from lib/main.ts --format json SymbolName\n\nProperty/method search auto-detects syntax:\n  - "Thing.prop" searches properties only\n  - "Thing.method()" searches methods only\n  - "Thing" searches all symbol types\n\nFor more information, visit: https://github.com/sourcegraph/scip\n')
     .action(handleCommand)
     .parse();
 }

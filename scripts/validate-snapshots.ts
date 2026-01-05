@@ -76,24 +76,28 @@ function runCommand(command: string, workingDir: string): string[] {
 }
 
 /**
- * Compare expected and actual output
+ * Compare expected and actual output line-by-line
  */
 function compareOutputs(expected: string[], actual: string[]): string[] {
   const differences: string[] = [];
 
-  // Check for extra lines in actual
-  const expectedSet = new Set(expected);
-  for (const line of actual) {
-    if (!expectedSet.has(line)) {
-      differences.push(`+ ${line}`);
-    }
-  }
+  // Find max length to iterate through both arrays
+  const maxLen = Math.max(expected.length, actual.length);
 
-  // Check for missing lines in actual
-  const actualSet = new Set(actual);
-  for (const line of expected) {
-    if (!actualSet.has(line)) {
-      differences.push(`- ${line}`);
+  for (let i = 0; i < maxLen; i++) {
+    const expectedLine = expected[i];
+    const actualLine = actual[i];
+
+    if (expectedLine === undefined && actualLine !== undefined) {
+      // Extra line in actual
+      differences.push(`+ ${actualLine}`);
+    } else if (expectedLine !== undefined && actualLine === undefined) {
+      // Missing line in actual
+      differences.push(`- ${expectedLine}`);
+    } else if (expectedLine !== actualLine) {
+      // Lines differ
+      differences.push(`Expected: ${expectedLine}`);
+      differences.push(`Actual:   ${actualLine}`);
     }
   }
 
