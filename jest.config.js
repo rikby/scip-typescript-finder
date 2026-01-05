@@ -2,7 +2,6 @@
 export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  setupFiles: ['<rootDir>/jest.setup.ts'],
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
@@ -29,7 +28,7 @@ export default {
           skipLibCheck: true,
           forceConsistentCasingInFileNames: true,
           resolveJsonModule: true,
-          allowImportingTsExtensions: true,
+          isolatedModules: true,
         },
       },
     ],

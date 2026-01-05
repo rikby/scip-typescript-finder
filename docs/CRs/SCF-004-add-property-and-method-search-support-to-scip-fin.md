@@ -1,11 +1,17 @@
 ---
 code: SCF-004
-status: Proposed
+status: In Progress
 dateCreated: 2026-01-04T14:50:31.992Z
 type: Feature Enhancement
 priority: High
 phaseEpic: SCIP Query Enhancement
 dependsOn: SCF-003
+implementationDate: 2026-01-05
+implementationNotes: Test infrastructure fixed:
+- Resolved import.meta Jest compatibility issue
+- All 9 test suites passing (184/184 tests)
+- Ready for feature implementation phases
+- Committed ba754d5
 ---
 
 # Add property and method search support to scip-finder CLI

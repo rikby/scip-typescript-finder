@@ -5,4 +5,4 @@
 
 // Set the project root directory for CLI tests
 // This allows the CLI runner to find the binary even when running from different directories
-process.env.SCIP_PROJECT_ROOT = process.cwd();
+globalThis.SCIP_PROJECT_ROOT = process.cwd();

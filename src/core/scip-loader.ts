@@ -5,7 +5,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 import protobuf from 'protobufjs';
 import type { ScipIndex } from './scip-types.js';
 import { parseJsonIndex } from './scip-json-normalizer.js';
@@ -23,16 +22,14 @@ export type {
 const MAX_PARENT_SEARCH = 10;
 
 // Get the directory of this module
-let moduleDir: string;
-try {
-  // In production (ESM): use import.meta.url
-  const moduleUrl = import.meta.url;
-  const modulePath = fileURLToPath(moduleUrl);
-  moduleDir = path.dirname(modulePath);
-} catch {
-  // Fallback for test environments
-  moduleDir = path.join(process.cwd(), 'dist/core');
-}
+// In tests: use __dirname (available after transpilation)
+// In production: will be set via import.meta at module initialization
+//
+// For tests, we can set SCIP_MODULE_DIR via jest setup or environment variable
+// @ts-ignore
+const _dirname = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
+
+const moduleDir = process.env.SCIP_MODULE_DIR || _dirname;
 
 // Default proto path - relative to the module directory
 // In dev: project-root/src/bundle/scip.proto

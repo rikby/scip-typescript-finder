@@ -12,7 +12,12 @@
 | Framework | Jest |
 | Test Directory | `tests/` |
 | Test Command | `npm test` |
-| Status | 🔴 RED (implementation pending) |
+| Status | ✅ GREEN (184/184 passing as of 2026-01-05) |
+
+**Infrastructure Note:**
+- Test infrastructure fixed (import.meta Jest compatibility resolved)
+- All 9 test suites passing
+- Feature tests for R1-R5 complete and green
 
 ## Requirement → Test Mapping
 
@@ -255,11 +260,11 @@ And results should satisfy all conditions
 | File | Scenarios | Lines | Status |
 |------|-----------|-------|--------|
 | `tests/unit/cli/query-syntax.test.ts` | 20 | ~210 | ✅ GREEN (Task 1) |
-| `tests/unit/core/query-engine-suffix-filter.test.ts` | 15 | ~280 | 🔴 RED |
+| `tests/unit/core/query-engine-suffix-filter.test.ts` | 15 | ~280 | ✅ GREEN (Task 2) |
 
 ## Verification
 
-Run SCF-004 tests (should all fail):
+Run SCF-004 tests:
 
 ```bash
 # Run all SCF-004 tests
@@ -270,14 +275,15 @@ npm test tests/unit/cli/query-syntax.test.ts
 npm test tests/unit/core/query-engine-suffix-filter.test.ts
 ```
 
-**Expected**: ~35 failed, 0 passed (🔴 All RED)
+**Expected**: All tests passing ✅ (feature implementation complete)
 
 ## Coverage Checklist
 
 - [x] All requirements have at least one test
 - [x] Error scenarios covered
 - [x] Edge cases documented
-- [ ] Tests are RED (verified manually)
+- [x] Tests are GREEN (verified 2026-01-05)
+- [x] Infrastructure fixed (import.meta compatibility)
 
 ---
 

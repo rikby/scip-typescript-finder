@@ -3,6 +3,18 @@
  * Symbol search with SCIP indexes (R1-R11)
  */
 
+// Set SCIP_MODULE_DIR for scip-loader BEFORE importing it
+// This is the only place where import.meta is used, avoiding Jest issues
+// Tests don't execute this file, so they won't hit the import.meta
+if (!process.env.SCIP_MODULE_DIR && typeof import.meta !== 'undefined') {
+  const { fileURLToPath } = await import('url');
+  const { dirname: pathDirname, join: pathJoin } = await import('path');
+  const modulePath = fileURLToPath(import.meta.url);
+  const moduleDir = pathDirname(modulePath);
+  // Go up to core directory (cli/ -> ../core/)
+  process.env.SCIP_MODULE_DIR = pathJoin(moduleDir, '../core');
+}
+
 import { Command } from 'commander';
 import { findScipFile, loadScipIndex } from '../core/scip-loader.js';
 import { buildSymbolIndex } from '../core/symbol-indexer.js';
