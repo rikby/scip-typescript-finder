@@ -448,11 +448,6 @@ service.processData().toString();  // ← Two method references
 - `/Users/kirby/home/scip-finder/src/core/query-engine.ts`
 - `/Users/kirby/home/scip-finder/src/core/symbol-indexer.ts`
 
-### 9.4 Research Artifacts
-- `/Users/kirby/home/scip-finder/claudedocs/research_scip_parser_20241230.md`
-- `/Users/kirby/home/scip-finder/docs/CRs/SCF-002-add-property-level-symbol-search-to-scip-finder.md`
-- `/Users/kirby/home/scip-finder/docs/SCIP_PARSER_REQUIREMENTS.md`
-
 ---
 
 ## Appendix A: SCIP Suffix Quick Reference
