@@ -136,6 +136,28 @@ scip-index
 
 Automatically finds all `tsconfig*.json` files (excluding `node_modules`, `dist`, `build`, `.git`) and creates `index.scip`.
 
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--depth <number>` | Maximum depth to search for tsconfig files (default: `2`) |
+| `--config <paths...>` | Explicit tsconfig file paths (comma-separated, skips auto-discovery) |
+
+**Examples:**
+
+```bash
+# Default: search depth 2, auto-discover tsconfig files
+scip-index
+
+# Search deeper for nested tsconfig files (monorepo structure)
+scip-index --depth 4
+
+# Specify exact tsconfig files to index
+scip-index --config tsconfig.json,src/tsconfig.json,packages/*/tsconfig.json
+
+# Get help
+scip-index --help
+```
+
 ## How It Works
 
 1. **Generate SCIP** - `scip-typescript` indexes your TypeScript/JavaScript project
